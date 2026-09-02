@@ -1,0 +1,7 @@
+# secrets & runtime data — never commit
+env/*.env
+!env/*.example
+data/
+
+# macOS
+.DS_Store

@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "9router-gateway": {
+      "type": "remote",
+      "url": "${ROUTER9_GATEWAY_URL}",
+      "headers": {
+        "Authorization": "Bearer ${ROUTER9_GATEWAY_KEY}"
+      }
+    }
+  }
+}

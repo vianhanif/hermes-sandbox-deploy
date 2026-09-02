@@ -9,13 +9,14 @@ Goals:
 - Reuses the local `~/.agents/` structure: Delegation Gate, role skills, MCP `9router-gateway`.
 - Mirrors the `9router-deploy` infra pattern (docker-compose + CI scp + per-service env).
 - Full tool access copied in: GitHub (gh), GitLab (glab), SSH keys.
-- Simple access from the local Mac: `ssh-tencent`.
+- Simple access from the local Mac: `ssh tencent-cloud` (alias in `~/.ssh/config`).
 
 ## 2. Current state
 
-- `9router-deploy` already runs a 4-service stack on the VPS: `9router`, `9router-api`, `caddy`, `cloudflared`, on Docker network `9router-net`.
+- `9router-deploy` runs a 4-service stack on the VPS: `9router`, `9router-api`, `caddy`, `cloudflared`.
+- Compose project is named `9router` (top-level `name:`), so the Docker bridge network is actually **`9router_9router-net`** — verified via `docker network ls`. The hermes compose must reference this exact external name.
 - `9router-api` (port 20127) is the LLM+MCP gateway, live at `9router.vianhanif.link` via Cloudflare Tunnel.
-- VPS reachable at `ssh-tencent`.
+- VPS reachable as `tencent-cloud` in `~/.ssh/config` (root, host `43.159.44.207`).
 - Local `~/.agents/` holds AGENTS.md + role skills + 9router-gateway MCP wiring.
 - Local project roots follow two trees:
   - `/Users/pid-alvian/Documents/personal/github/`
@@ -24,9 +25,9 @@ Goals:
 ## 3. Topology
 
 ```
-Local Mac ── ssh-tencent ──► VPS (/opt/hermes-sandbox)
+Local Mac ── ssh tencent-cloud ──► VPS (/opt/hermes-sandbox)
                               │
-                      docker-compose (hermes container joins 9router-net)
+                      docker-compose (hermes joins 9router_9router-net)
                               │
                       ┌───────▼────────┐
                       │     hermes     │  Hermes Agent container
@@ -47,7 +48,7 @@ Local Mac ── ssh-tencent ──► VPS (/opt/hermes-sandbox)
                     └───────────────────┘
 ```
 
-Key: Hermes reaches the MCP gateway over the shared `9router-net` via container DNS (`9router-api:20127`) — no Cloudflare round-trip.
+Key: Hermes reaches the MCP gateway over the shared `9router_9router-net` via container DNS (`9router-api:20127`) — no Cloudflare round-trip.
 
 ## 4. Repository layout
 
@@ -70,7 +71,7 @@ agents/                          # github.com/<you>/agents (public)
 ```
 
 **Sanitization rules (public-safe):**
-- No secrets, no tokens, no gateway keys — reference `{{ROUTER9_GATEWAY_KEY}}` placeholders only.
+- No secrets, no tokens, no gateway keys — reference `${ROUTER9_GATEWAY_KEY}` placeholders only.
 - No employer-specific ticket prefixes, JIRA project keys, Metabase instance slugs, or internal URLs.
 - Employer-coupled skills (`jira-sprint-orchestrator`, `sprint-jam-triage`, `sprint-review-orchestrator`, `mcp-gateway-sync`) either **stay out of this repo** (kept locally / in a separate private repo) or are genericized before publishing.
 - MCP config in `AGENTS.md` references the gateway URL/pattern but never a real key.
@@ -172,19 +173,18 @@ Notes:
 
 ## 7. docker-compose.yml (draft)
 
+Two compose files keep local runs portable (no external network needed) while VPS deploys join the 9router network:
+
+`docker-compose.yml` (local-runnable default):
+
 ```yaml
 name: hermes-sandbox
-
-networks:
-  9router-net:
-    external: true     # join existing 9router stack network
 
 services:
   hermes:
     build: .
     container_name: hermes
     restart: unless-stopped
-    networks: [9router-net]
     env_file: ./env/hermes.env
     environment:
       HOME: /home/hermes
@@ -201,10 +201,26 @@ services:
       - ./data/workbench:/workbench             # repo checkouts / git worktrees (dual-root layout)
       - ./data/ssh:/home/hermes/.ssh:ro         # ssh keys provisioned once, host-side
     ports:
-      - "9119:9119"                             # web dashboard (Kanban tab) — reachable via ssh tunnel
+      - "9119:9119"                             # web dashboard (Kanban tab)
     stdin_open: true
     tty: true
 ```
+
+`docker-compose.vps.yml` (override used only on VPS — joins the 9router network):
+
+```yaml
+services:
+  hermes:
+    networks:
+      - 9router_9router-net
+
+networks:
+  9router_9router-net:
+    external: true     # existing 9router stack network on the VPS
+```
+
+Local run: `docker compose up -d --build` (no external network).
+VPS run: `docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build`.
 
 Remote layout `/opt/hermes-sandbox/`:
 - `data/hermes/` → persistent `.hermes` (sessions, memory, kanban SQLite board).
@@ -231,7 +247,7 @@ Remote layout `/opt/hermes-sandbox/`:
 }
 ```
 
-`{{ROUTER9_GATEWAY_KEY}}` injected from `env/hermes.env` at provision time — never committed.
+`${ROUTER9_GATEWAY_KEY}` injected from `env/hermes.env` at provision time — never committed. MCP URL is also env-driven (`${ROUTER9_GATEWAY_URL}`) so the same `config/mcp.json` works locally (uses `host.docker.internal`) and on the VPS (uses compose DNS).
 
 ## 9. Kanban & orchestration
 
@@ -263,12 +279,12 @@ The container exposes the Hermes CLI and web dashboard. No messaging gateway is 
 SSH into the VPS and attach to the running `hermes` container:
 ```bash
 # one-shot: attach to the Hermes CLI inside the container
-ssh-tencent -t 'docker exec -it hermes hermes'
+ssh tencent-cloud -t 'docker exec -it hermes hermes'
 ```
 
 Prerequisite on the VPS host: `docker` CLI available and runnable for the SSH user. You must be in the `docker` group (or root) to run `docker exec` without sudo. Verify once:
 ```bash
-ssh-tencent 'docker version'          # if "permission denied", add user to docker group
+ssh tencent-cloud 'docker version'          # if "permission denied", add user to docker group
 ```
 
 ### 10.2 Web dashboard (Kanban board UI)
@@ -276,9 +292,25 @@ ssh-tencent 'docker version'          # if "permission denied", add user to dock
 The dashboard binds `0.0.0.0:9119` inside the container and is published to the host on `9119`. Do **not** open it to the public internet — reach it via SSH tunnel:
 ```bash
 # from local Mac: forward VPS:9119 -> localhost:9119, then open browser
-ssh-tencent -L 9119:localhost:9119
+ssh tencent-cloud -L 9119:localhost:9119
 # then browse http://127.0.0.1:9119  →  Kanban tab
 ```
+
+### 10.3 Data directory permissions
+
+Because the container runs as non-root user `hermes` (UID 1000), the host must pre-create data directories with ownership matching. Two options:
+
+**Option A — chown (recommended):**
+```bash
+# on the VPS host, before first deploy:
+sudo mkdir -p /opt/hermes-sandbox/data/{hermes,workbench,ssh}
+sudo chown -R 1000:1000 /opt/hermes-sandbox/data/
+```
+
+**Option B — Docker user namespace remap:**
+Enable userns-remap in `/etc/docker/daemon.json` to map host UID 1000 to container UID 1000. More complex, avoids host-side chown but requires daemon restart.
+
+Start with Option A. If permission errors persist inside the container despite chown, run `docker exec -u root hermes chown -R 1000:1000 /home/hermes/.hermes` to fix from inside.
 
 ## 11. Implementation roadmap
 

@@ -1,0 +1,16 @@
+# role profiles mirroring the public agents repo roles
+profiles:
+  - name: planner
+  - name: coder
+  - name: reviewer
+  - name: tester
+  - name: analyzer
+
+kanban:
+  orchestrator_profile: planner        # decomposes triage tasks
+  default_assignee: coder              # fallback route when no profile fits
+  auto_decompose: true                 # auto-expand triage -> child tasks
+  dispatch_in_gateway: true            # dispatcher lives in the gateway process
+
+auxiliary:
+  kanban_decomposer: ${AUX_MODEL}      # model used for task decomposition

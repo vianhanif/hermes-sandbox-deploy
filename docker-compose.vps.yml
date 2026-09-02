@@ -1,0 +1,8 @@
+services:
+  hermes:
+    networks:
+      - 9router_9router-net
+
+networks:
+  9router_9router-net:
+    external: true     # existing 9router stack network on the VPS
