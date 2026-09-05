@@ -11,11 +11,6 @@ services:
       # gateway-mode needed so the kanban dispatcher runs
       HERMES_DASHBOARD: 1            # supervised web dashboard (port 9119)
       HERMES_DASHBOARD_PORT: 9119
-      # keys for tool access (sampled via env/.env, never committed)
-      GH_TOKEN: ${GH_TOKEN}
-      GITLAB_TOKEN: ${GITLAB_TOKEN}
-      ROUTER9_GATEWAY_URL: ${ROUTER9_GATEWAY_URL}
-      ROUTER9_GATEWAY_KEY: ${ROUTER9_GATEWAY_KEY}
     volumes:
       - ./data/hermes:/home/hermes/.hermes      # persistent state, memory, sessions, kanban SQLite
       - ./data/workbench:/workbench             # repo checkouts / git worktrees (dual-root layout)
