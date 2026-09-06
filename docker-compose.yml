@@ -1,10 +1,13 @@
+name: hermes-sandbox
+
 services:
   hermes:
     build: .
     container_name: hermes
     restart: unless-stopped
-    env_file: .env
+    env_file: ./env/hermes.env
     environment:
+      - HOME=/home/hermes
       - HERMES_DOMAIN=${HERMES_DOMAIN}
       - ROUTER9_GATEWAY_URL=${ROUTER9_GATEWAY_URL}
       - ROUTER9_GATEWAY_KEY=${ROUTER9_GATEWAY_KEY}
