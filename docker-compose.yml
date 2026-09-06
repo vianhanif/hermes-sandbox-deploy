@@ -19,9 +19,12 @@ services:
 
   caddy:
     image: caddy:latest
+    container_name: hermes-caddy
     restart: unless-stopped
     environment:
       - HERMES_DOMAIN=${HERMES_DOMAIN}
+    ports:
+      - "9180:80"
     volumes:
       - ./proxy/Caddyfile:/etc/caddy/Caddyfile
       - ./data/caddy_data:/data
@@ -31,6 +34,7 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
+    container_name: hermes-cloudflared
     restart: unless-stopped
     command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}
     networks:
