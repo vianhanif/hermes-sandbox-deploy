@@ -55,14 +55,14 @@ flowchart TB
 - [Docker](https://docs.docker.com/engine/install/) with Docker Compose v2+
 - [Git](https://git-scm.com/)
 - (Optional) [Cloudflare](https://www.cloudflare.com/) account with a tunnel token for public HTTPS access
-- (Optional) An LLM gateway URL for model access (e.g., [9router](https://github.com/YOUR_ORG/9router))
+- (Optional) An LLM gateway URL for model access (e.g., [9router](https://github.com/vianhanif/9router))
 
 ## Quick Start
 
 ### 1. Clone and configure
 
 ```sh
-git clone https://github.com/YOUR_USERNAME/hermes-sandbox-deploy.git
+git clone https://github.com/vianhanif/hermes-sandbox-deploy.git
 cd hermes-sandbox-deploy
 
 cp .env.example .env
