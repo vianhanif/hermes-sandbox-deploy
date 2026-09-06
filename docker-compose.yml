@@ -1,21 +1,46 @@
-name: hermes-sandbox
-
 services:
   hermes:
     build: .
     container_name: hermes
     restart: unless-stopped
-    env_file: ./env/hermes.env
+    env_file: .env
     environment:
-      HOME: /home/hermes
-      # gateway-mode needed so the kanban dispatcher runs
-      HERMES_DASHBOARD: 1            # supervised web dashboard (port 9119)
-      HERMES_DASHBOARD_PORT: 9119
+      - HERMES_DOMAIN=${HERMES_DOMAIN}
+      - ROUTER9_GATEWAY_URL=${ROUTER9_GATEWAY_URL}
+      - ROUTER9_GATEWAY_KEY=${ROUTER9_GATEWAY_KEY}
+    networks:
+      - hermes-net
     volumes:
-      - ./data/hermes:/home/hermes/.hermes      # persistent state, memory, sessions, kanban SQLite
-      - ./data/workbench:/workbench             # repo checkouts / git worktrees (dual-root layout)
-      - ./data/ssh:/home/hermes/.ssh:ro         # ssh keys provisioned once, host-side
-    ports:
-      - "9119:9119"                             # web dashboard (Kanban tab)
+      - ./data/hermes:/home/hermes/.hermes
+      - ./data/workbench:/workbench
+      - ./data/ssh:/home/hermes/.ssh:ro
     stdin_open: true
     tty: true
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile
+      - ./data/caddy_data:/data
+      - ./data/caddy_config:/config
+    networks:
+      - hermes-net
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}
+    volumes:
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml
+    networks:
+      - hermes-net
+
+networks:
+  hermes-net:
+    driver: bridge

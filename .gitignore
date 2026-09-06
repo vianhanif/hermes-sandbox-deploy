@@ -1,7 +1,13 @@
 # secrets & runtime data — never commit
+.env
 env/*.env
 !env/*.example
+docker-compose.override.yml
+*.secret.json
+cloudflared/config.yml
+!cloudflared/config.yml.example
 data/
+.worktrees/
 
 # macOS
 .DS_Store

@@ -1,0 +1,7 @@
+# Decoupled Hermes reverse proxy template
+# Routes $HERMES_DOMAIN to the hermes dashboard container (port 9119).
+# Compose substitutes $HERMES_DOMAIN from .env at container start.
+
+{$HERMES_DOMAIN} {
+    reverse_proxy hermes:9119
+}

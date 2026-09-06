@@ -1,0 +1,32 @@
+name: deploy
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+  repository_dispatch:
+    types: [ deploy ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync deploy files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.TENCENT_HOST }}
+          username: ${{ secrets.TENCENT_USER }}
+          key: ${{ secrets.TENCENT_SSH_KEY }}
+          source: "docker-compose.yml,hermes-sandbox"
+          target: /opt/hermes-sandbox
+      - name: Restart services
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.TENCENT_HOST }}
+          username: ${{ secrets.TENCENT_USER }}
+          key: ${{ secrets.TENCENT_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/hermes-sandbox
+            docker compose up -d --remove-orphans
+            docker compose ps
