@@ -8,6 +8,10 @@ services:
       - HERMES_DOMAIN=${HERMES_DOMAIN}
       - ROUTER9_GATEWAY_URL=${ROUTER9_GATEWAY_URL}
       - ROUTER9_GATEWAY_KEY=${ROUTER9_GATEWAY_KEY}
+      - HERMES_DASHBOARD=1
+      - HERMES_DASHBOARD_PORT=9119
+    ports:
+      - "9119:9119"
     networks:
       - hermes-net
     volumes:
