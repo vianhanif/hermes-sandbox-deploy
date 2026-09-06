@@ -21,6 +21,8 @@ services:
     image: caddy:latest
     container_name: caddy
     restart: unless-stopped
+    environment:
+      - HERMES_DOMAIN=${HERMES_DOMAIN}
     ports:
       - "80:80"
       - "443:443"
@@ -36,8 +38,6 @@ services:
     container_name: cloudflared
     restart: unless-stopped
     command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}
-    volumes:
-      - ./cloudflared/config.yml:/etc/cloudflared/config.yml
     networks:
       - hermes-net
 
