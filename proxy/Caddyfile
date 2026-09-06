@@ -2,6 +2,9 @@
 # Routes $HERMES_DOMAIN to the hermes dashboard container (port 9119).
 # Compose substitutes $HERMES_DOMAIN from .env at container start.
 
-{$HERMES_DOMAIN} {
-    reverse_proxy hermes:9119
+http://{$HERMES_DOMAIN} {
+    reverse_proxy hermes:9119 {
+        flush_interval -1
+    }
+    encode zstd gzip
 }
