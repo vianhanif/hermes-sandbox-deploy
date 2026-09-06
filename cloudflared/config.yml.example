@@ -1,0 +1,11 @@
+# Cloudflared public template — copy to config.yml and fill real values.
+# Origin points at the local Caddy reverse proxy (hermes-net).
+# $HERMES_DOMAIN and $CLOUDFLARED_TOKEN are read from .env by Compose.
+
+tunnel: ${CLOUDFLARED_TUNNEL_ID}
+credentials-file: /etc/cloudflared/${CLOUDFLARED_TUNNEL_ID}.json
+
+ingress:
+  - hostname: ${HERMES_DOMAIN}
+    service: http://caddy:80
+  - service: http_status:404
